@@ -15,4 +15,3 @@ COPY --chown=1000:1000 . .
 EXPOSE 3000 
 
 CMD [ "npm", "run", "start:dev" ] 
-
