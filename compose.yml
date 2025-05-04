@@ -1,0 +1,13 @@
+# Adapted from:
+# https://github.com/docker/awesome-compose/blob/master/nginx-nodejs-redis/compose.yaml
+
+services:
+  api:
+    build: .
+    hostname: dailymed_api 
+    ports:
+      - '3000:3000'
+    security_opt:
+      - label:disable
+    volumes:
+      - .:/home/node/app:z # :z due to selinux
