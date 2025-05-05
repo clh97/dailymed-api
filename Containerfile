@@ -1,27 +1,17 @@
-FROM node:18-alpine AS builder
+# Adapted from:
+# https://www.digitalocean.com/community/tutorials/how-to-build-a-node-js-application-with-docker
+FROM node
 
-WORKDIR /app
+RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
+
+WORKDIR /home/node/app
 
 COPY package*.json ./
-RUN npm ci
 
-COPY . .
-RUN npm run build
+RUN npm install
 
-# ----------------------------------------------
-FROM node:18-alpine
+COPY --chown=1000:1000 . .
 
-WORKDIR /app
+EXPOSE 3000 
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-
-RUN addgroup -g 1001 -S nodejs && \
-  adduser -S nestjs -u 1001 && \
-  chown -R nestjs:nodejs /app
-
-USER nestjs
-
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD [ "npm", "run", "start:dev" ] 
