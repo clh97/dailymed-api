@@ -1,13 +1,29 @@
-# Adapted from:
-# https://github.com/docker/awesome-compose/blob/master/nginx-nodejs-redis/compose.yaml
-
 services:
   api:
-    build: .
-    hostname: dailymed_api 
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - '3000:3000'
-    security_opt:
-      - label:disable
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      DAILYMED_API_BASE_URL: ${DAILYMED_API_BASE_URL}
     volumes:
-      - .:/home/node/app:z # :z due to selinux
+      - .:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
