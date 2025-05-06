@@ -1,4 +1,4 @@
-import { Observable } from "rxjs";
+import { Observable } from 'rxjs';
 
 export interface DailyMedData {
   data: DailyMedRoot[];
@@ -27,7 +27,7 @@ export interface DailyMedRoot {
 
 export interface DailyMedAggregatedData {
   metadata: DailyMedRoot;
-  data: string;
+  data: any;
 }
 
 export interface IDailyMedClient {

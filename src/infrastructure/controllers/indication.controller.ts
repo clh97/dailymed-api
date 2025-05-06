@@ -1,5 +1,6 @@
-import { DailyMedAggregatedData } from "@application/interfaces/idailymed.client.interface";
-import { DailyMedClient } from "@infrastructure/external-services/dailymed/dailymed.client";
+import { DailyMedAggregatedData } from '@application/interfaces/idailymed.client.interface';
+import { IndicationExtractorService } from '@application/services/indication-extractor.service';
+import { DailyMedClient } from '@infrastructure/external-services/dailymed/dailymed.client';
 import {
   Controller,
   Get,
@@ -8,17 +9,20 @@ import {
   NotFoundException,
   Param,
   Query,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
-@Controller("indication")
+@Controller('indication')
 export class IndicationController {
   private readonly logger = new Logger(IndicationController.name);
 
-  constructor(private readonly dailyMedClient: DailyMedClient) {}
+  constructor(
+    private readonly dailyMedClient: DailyMedClient,
+    private readonly extractorService: IndicationExtractorService,
+  ) {}
 
-  @Get("/drug/:setid")
+  @Get('/drug/:setid')
   async getSplBySetId(
-    @Param("setid") setid: string,
+    @Param('setid') setid: string,
   ): Promise<DailyMedAggregatedData> {
     this.logger.log(`Received request to find SPL with setid: ${setid}`);
     try {
@@ -42,7 +46,7 @@ export class IndicationController {
         );
       }
 
-      return { data: "", metadata: splEntry };
+      return { data: '', metadata: splEntry };
     } catch (error) {
       this.logger.error(
         `Error fetching SPL with setid ${setid}:`,
@@ -56,14 +60,14 @@ export class IndicationController {
     }
   }
 
-  @Get("search")
+  @Get('search')
   async searchByTitle(
-    @Query("title") title: string,
+    @Query('title') title: string,
   ): Promise<DailyMedAggregatedData> {
     if (!title) {
-      this.logger.warn("Search by title missing title parameter.");
+      this.logger.warn('Search by title missing title parameter.');
       throw new NotFoundException(
-        "Title query parameter is required (e.g., /dailymed/search?title=DUPIXENT).",
+        'Title query parameter is required (e.g., /dailymed/search?title=DUPIXENT).',
       );
     }
 
@@ -90,7 +94,12 @@ export class IndicationController {
         );
       }
 
-      return { data: "", metadata: splEntry };
+      const possibleIndication = this.extractorService.extractPatternContexts(
+        xmlData,
+        'Indication',
+      );
+
+      return { data: possibleIndication, metadata: splEntry };
     } catch (error) {
       this.logger.error(
         `Error searching SPL by title "${title}":`,

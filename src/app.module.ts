@@ -1,51 +1,43 @@
-import { Module } from "@nestjs/common";
-import { IndicationQueryService } from "@application/services/indication-query/indication-query.service";
-import { IndicationController } from "@infrastructure/controllers/indication.controller";
-import { AuthController } from "@infrastructure/controllers/auth.controller";
-import { DatabaseModule } from "@infrastructure/database/database.module";
-import { DailyMedClient } from "@infrastructure/external-services/dailymed/dailymed.client";
-import { SplParserServiceService } from "@infrastructure/external-services/spl-parser/spl-parser.service";
-import { ComprehendClientService } from "@infrastructure/external-services/ai-mapping/comprehend.client/comprehend.client.service";
-import { AuthModule } from "@infrastructure/auth/auth.module";
-import { LabelProcessingProducerService } from "@infrastructure/queues/producers/label-processing.producer/label-processing.producer.service";
-import { LabelProcessingConsumerService } from "@infrastructure/queues/consumers/label-processing.consumer/label-processing.consumer.service";
-import { IndicationMappingConsumerService } from "@infrastructure/queues/consumers/indication-mapping.consumer/indication-mapping.consumer.service";
-import { QueuesModule } from "@infrastructure/queues/queues.module";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { HttpModule } from "@nestjs/axios";
-import Redis from "ioredis";
+import { AuthModule } from '@infrastructure/auth/auth.module';
+import { AuthController } from '@infrastructure/controllers/auth.controller';
+import { IndicationController } from '@infrastructure/controllers/indication.controller';
+import { DatabaseModule } from '@infrastructure/database/database.module';
+import { ComprehendClientService } from '@infrastructure/external-services/ai-mapping/comprehend.client/comprehend.client.service';
+import { DailyMedClient } from '@infrastructure/external-services/dailymed/dailymed.client';
+import { IndicationExtractorService } from '@application/services/indication-extractor.service';
+import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+import { ApplicationModule } from './application/application.module';
 
 @Module({
   imports: [
+    ApplicationModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
     HttpModule,
-    QueuesModule,
     DatabaseModule,
     AuthModule,
-    AppModule,
+    RootModule,
   ],
   controllers: [IndicationController, AuthController],
   providers: [
-    IndicationQueryService,
     DailyMedClient,
-    SplParserServiceService,
     ComprehendClientService,
-    LabelProcessingProducerService,
-    LabelProcessingConsumerService,
-    IndicationMappingConsumerService,
+    IndicationExtractorService,
     DailyMedClient,
     {
-      provide: "REDIS_CLIENT",
+      provide: 'REDIS_CLIENT',
       useFactory: (configService: ConfigService) =>
         new Redis({
-          host: configService.get<string>("REDIS_HOST"),
-          port: configService.get<number>("REDIS_PORT"),
+          host: configService.get<string>('REDIS_HOST'),
+          port: configService.get<number>('REDIS_PORT'),
         }),
       inject: [ConfigService],
     },
   ],
-  exports: [DailyMedClient, "REDIS_CLIENT"],
+  exports: [DailyMedClient, 'REDIS_CLIENT'],
 })
-export class AppModule {}
+export class RootModule {}
