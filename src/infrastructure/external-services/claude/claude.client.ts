@@ -35,7 +35,7 @@ export class ClaudeClient {
     const { prompt, context, maxTokens = 1024, temperature = 0.7 } = requestDto;
 
     const contextText = context.join('\n\n');
-    
+
     const systemPrompt = `
       You are a medical coding specialist tasked with mapping drug indications to ICD-10 codes. Given a drug indication text, analyze it and return the most appropriate ICD-10 code(s).
 Input:
