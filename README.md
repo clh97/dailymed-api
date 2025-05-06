@@ -10,7 +10,7 @@ Node.js application that uses an LLM to generate a medication indication list wi
 
 > **Download or scrape?**<br>
 > I wasn't really sure if downloading the datasets from DailyMed and populating a DB would represent an ideal challenge so
-<br><br>**I've decided to follow the scraping approach.**<br>
+<br><br>**I have decided to follow the scraping approach.**<br><br>
 > Real-world scenario I'd probably download the datasets locally and look for ways to update them in the future.
 
 **Finding Dupixent**
