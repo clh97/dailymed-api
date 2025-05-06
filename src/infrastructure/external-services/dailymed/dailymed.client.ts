@@ -42,10 +42,10 @@ export class DailyMedClient implements IDailyMedClient {
    */
   fetchDataPage(
     page: number,
-    key: string = 'dailymed_page',
+    key: string = 'raw:dailymed_spl_page',
   ): Observable<DailyMedData> {
     const url = `${this.baseUrl}/services/v2/spls?page=${page}`;
-    const cacheKey = `${key}_${page}`;
+    const cacheKey = `raw:${key}_${page}`;
     const cacheTTL = 60 * 60 * 24;
 
     return new Observable<DailyMedData>((observer) => {
@@ -135,7 +135,7 @@ export class DailyMedClient implements IDailyMedClient {
    */
   async fetchLabelXMLBySetId(setid: string): Promise<string | null> {
     const url = `${this.baseUrl}/fda/fdaDrugXsl.cfm?setid=${setid}&type=xml`;
-    const cacheKey = `dailymed_xml_${setid}`;
+    const cacheKey = `raw:${setid}:dailymed_label_xml`;
     const cacheTTL = 60 * 60 * 24;
 
     this.logger.log(`Attempting to fetch XML for setid: ${setid}`);
@@ -168,11 +168,9 @@ export class DailyMedClient implements IDailyMedClient {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const xmlData = response.data;
 
-      console.log(xmlData, typeof xmlData);
-
       // Cache the XML data
       await this.redisClient
-        .setex(cacheKey, cacheTTL, xmlData)
+        .setex(cacheKey, cacheTTL, String(xmlData))
         .catch((cacheError) =>
           this.logger.error(
             `Error setting XML cache for ${cacheKey}`,

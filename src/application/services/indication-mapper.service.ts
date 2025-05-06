@@ -6,7 +6,7 @@ interface IndicationData {
   setid: string;
   title: string;
   contexts: string[];
-  llmSummary?: string;
+  llmData?: object;
   timestamp: number;
 }
 
@@ -34,7 +34,7 @@ export class IndicationMapperService {
     setid: string,
     title: string,
     contexts: string[],
-    llmSummary?: string,
+    llmData?: object,
   ): Promise<boolean> {
     this.logger.log(`Saving indication data for setid: ${setid}`);
 
@@ -43,7 +43,7 @@ export class IndicationMapperService {
         setid,
         title,
         contexts,
-        llmSummary,
+        llmData,
         timestamp: Date.now(),
       };
 

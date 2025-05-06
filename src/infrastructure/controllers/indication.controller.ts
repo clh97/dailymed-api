@@ -1,7 +1,7 @@
 import { IndicationData } from '@application/interfaces/idailymed.client.interface';
 import { IndicationExtractorService } from '@application/services/indication-extractor.service';
 import { IndicationMapperService } from '@application/services/indication-mapper.service';
-import { ClaudeClient } from '@infrastructure/external-services/claude/claude.client';
+import { ClaudeClient as LLMClient } from '@infrastructure/external-services/claude/claude.client';
 import { DailyMedClient } from '@infrastructure/external-services/dailymed/dailymed.client';
 import {
   Controller,
@@ -20,7 +20,7 @@ export class IndicationController {
   constructor(
     private readonly dailyMedClient: DailyMedClient,
     private readonly extractorService: IndicationExtractorService,
-    private readonly claudeClient: ClaudeClient,
+    private readonly llmClient: LLMClient,
     private readonly indicationMapperService: IndicationMapperService,
   ) {}
 
@@ -60,7 +60,7 @@ export class IndicationController {
         'indication',
       );
 
-      const llmGenData = await this.claudeClient.generateResponse({
+      const llmGenData = await this.llmClient.generateResponse({
         context: possibleIndication.contexts,
         prompt: `
         Given the extracted drug indications, map them to the appropriate ICD-10 codes using AI assistance.
@@ -72,7 +72,7 @@ export class IndicationController {
         splEntry.setid,
         splEntry.title,
         possibleIndication.contexts,
-        llmGenData.text,
+        llmGenData,
       );
 
       return { data: llmGenData.text, metadata: splEntry };
@@ -129,14 +129,18 @@ export class IndicationController {
         );
       }
 
+      this.logger.log(`Found label data for SPL "${splEntry.setid}".`);
+
       const possibleIndication = this.extractorService.extractPatternContexts(
         xmlData,
         'indication', // just a lookup for `intention` string and then it grabs the next 4 dom elements to use as context
       );
 
-      const llmGenData = await this.claudeClient.generateResponse({
+      this.logger.log(`Context for "${splEntry.setid}" generated.`);
+
+      const llmGenData = await this.llmClient.generateResponse({
         context: possibleIndication.contexts,
-        prompt: `Given the extracted drug indications, map them to the appropriate ICD-10 codes using AI assistance. The system should: return an abstracted, user-friendly definition of all the indications ranked according to confidence level.`,
+        prompt: `Generate an object with the indications, ranked according to confidence level and mappet to their respective ICD-10 codes. You should strictly output JSON format and only that. Your output must be serializable according to RFC 8259.`,
         maxTokens: 1024,
       });
 
@@ -144,7 +148,7 @@ export class IndicationController {
         splEntry.setid,
         title,
         possibleIndication.contexts,
-        llmGenData.text,
+        llmGenData,
       );
 
       return { data: llmGenData, metadata: splEntry };
