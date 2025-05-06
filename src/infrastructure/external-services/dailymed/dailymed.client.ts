@@ -45,7 +45,7 @@ export class DailyMedClient implements IDailyMedClient {
     key: string = 'dailymed_spl_page',
   ): Observable<DailyMedData> {
     const url = `${this.baseUrl}/services/v2/spls?page=${page}`;
-    const cacheKey = `${key}_${page}`;
+    const cacheKey = `raw:${key}_${page}`;
     const cacheTTL = 60 * 60 * 24;
 
     return new Observable<DailyMedData>((observer) => {
