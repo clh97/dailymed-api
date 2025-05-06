@@ -1,4 +1,4 @@
-# dailymed-api
+# DailyMed API
 
 Microservice-based application that generates drug indications by extracting data from DailyMed
 
