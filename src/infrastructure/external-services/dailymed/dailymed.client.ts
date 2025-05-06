@@ -42,10 +42,10 @@ export class DailyMedClient implements IDailyMedClient {
    */
   fetchDataPage(
     page: number,
-    key: string = 'raw:dailymed_spl_page',
+    key: string = 'dailymed_spl_page',
   ): Observable<DailyMedData> {
     const url = `${this.baseUrl}/services/v2/spls?page=${page}`;
-    const cacheKey = `raw:${key}_${page}`;
+    const cacheKey = `${key}_${page}`;
     const cacheTTL = 60 * 60 * 24;
 
     return new Observable<DailyMedData>((observer) => {
@@ -135,7 +135,7 @@ export class DailyMedClient implements IDailyMedClient {
    */
   async fetchLabelXMLBySetId(setid: string): Promise<string | null> {
     const url = `${this.baseUrl}/fda/fdaDrugXsl.cfm?setid=${setid}&type=xml`;
-    const cacheKey = `raw:${setid}:dailymed_label_xml`;
+    const cacheKey = `${setid}:dailymed_label_xml`;
     const cacheTTL = 60 * 60 * 24;
 
     this.logger.log(`Attempting to fetch XML for setid: ${setid}`);

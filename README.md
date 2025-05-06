@@ -1,17 +1,17 @@
 # DailyMed API
 
-Microservice-based application that generates drug indications by extracting data from DailyMed
+Node.js application that uses an LLM to generate a medication indication list with its respective ICD-10 codes, using DailyMed data.
 
 ![](video.webm)
 
-## My approach
+## Approach
 
 ### Understanding the data
 
 > **Download or scrape?**<br>
-> I wasn't really sure if downloading the datasets from DailyMed and populating a DB with them would be the ideal challenge so **I've decided to follow the scraping approach.**<br><br>
-> Real-world scenario I'd probably download the datasets and look for ways to update them.
-
+> I wasn't really sure if downloading the datasets from DailyMed and populating a DB would represent an ideal challenge so
+<br><br>**I've decided to follow the scraping approach.**<br>
+> Real-world scenario I'd probably download the datasets locally and look for ways to update them in the future.
 
 **Finding Dupixent**
 1. DailyMed's homepage search with the `DUPIXENT` term
@@ -20,7 +20,7 @@ Microservice-based application that generates drug indications by extracting dat
 4. Used it to create a simple crawler that progressively explores and matches a specific `setid`, looking for a specific drug name, caching entries to enhance future requests
 5. Added a functionality to crawl searching by drug name, returning the `setid` too
 6. With this data, was now able to retrieve the [entire label](https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=595f437d-2729-40bb-9c62-c8ece1f82780&type=xml)
-7. Searching for an OSS list of ICD10 codes, found this: [icd10cm_codes_2025.txt](https://raw.githubusercontent.com/Chetank190/icd_code_prediction/refs/heads/main/icd10cm_codes_2025.txt) and used vim to convert it to JSON
+7. Searching for an OSS list of ICD10 codes, found this: [icd10cm_codes_2025.txt](https://raw.githubusercontent.com/Chetank190/icd_code_prediction/refs/heads/main/icd10cm_codes_2025.txt) and used vim to convert it to JSON - **ended up not using them because my token input is limited.**
 
 ## Writing the code
 
@@ -31,7 +31,9 @@ Microservice-based application that generates drug indications by extracting dat
 
 **With the necessary data, will start exploring ways to retrieve the close/next elements to INDICATION and COUNTERINDICATION terms**
 
-TODO
+1. `indication-extractor.service.ts` basically extracts close elements to "indication" keyword occurrences 
+2. `claude.client.ts` interacts with the LLM to provide the proper answer based on collected data
+3. `indication-mapper.service.ts` maps the LLM response to the Redis cache, allowing cached requests for 24h
 
 ## HTTP requests
 
@@ -39,88 +41,42 @@ TODO
 2. `GET /indication/search?q=DUPIXENT` on `indication.controller.ts` to fetch drug data by query param `title`
 
 ```sh
-# 1.
-curl 'localhost:3000/indication/drug/595f437d-2729-40bb-9c62-c8ece1f82780'
+# 1. ------
+curl 'localhost:3000/indication/drug/595f437d-2729-40bb-9c62-c8ece1f82780' | jq # dupixent
 
-# 2.
-curl 'localhost:3000/indication/search?title=IBUPROFEN'
+# 2. ------
+curl "localhost:3000/indication/search/?title=dupixent" | jq
+curl "localhost:3000/indication/search/?title=Flecainide" | jq
 ```
 
 
 ## Project structure
 
 ```py
-├── src/
-│   ├── application/                                         # Application Layer (Use Cases, Application Services)
-│   │   ├── use-cases/                                       # Domain logic for specific features
-│   │   │   └── process-drug-label/
-│   │   │       ├── process-drug-label.command.ts
-│   │   │       └── process-drug-label.use-case.ts
-│   │   ├── services/                                        # Application-level services (e.g., querying mapped data)
-│   │   │   └── indication-query.service.ts
-│   │   ├── dtos/                                            # Data Transfer Objects for application layer boundaries
-│   │   │   └── indication-query.dto.ts
-│   │   └── interfaces/                                      # Interfaces for external services (defined here, implemented in Infra)
-│   │       ├── idailymed.client.ts
-│   │       ├── ispl-parser.service.ts
-│   │       └── iai-mapper.client.ts
-│   ├── domain/                                              # Domain Layer (Core Business Logic)
-│   │   ├── entities/                                        # Core business objects (plain classes/interfaces)
-│   │   │   ├── drug-label.entity.ts
-│   │   │   └── indication.entity.ts
-│   │   ├── repositories/                                    # Repository Interfaces (defined here, implemented in Infra)
-│   │   │   ├── idrug-label.repository.ts
-│   │   │   └── iindication-mapping.repository.ts
-│   │   └──...                                               # Domain services, value objects (if needed)
-│   ├── infrastructure/                                      # Infrastructure Layer (Frameworks, DB, External Services)
-│   │   ├── controllers/                                     # NestJS HTTP Controllers
-│   │   │   ├── indication.controller.ts
-│   │   │   └── auth.controller.ts
-│   │   ├── database/                                        # Database specific code (PostgreSQL/TypeORM)
-│   │   │   ├── entities/                                    # TypeORM Entities (decorated classes)
-│   │   │   │   ├── drug-label.typeorm.entity.ts
-│   │   │   │   ├── indication.typeorm.entity.ts
-│   │   │   │   └── icd10-mapping.typeorm.entity.ts
-│   │   │   ├── repositories/                                # TypeORM Repository Implementations
-│   │   │   │   ├── drug-label.typeorm.repository.ts
-│   │   │   │   └── indication-mapping.typeorm.repository.ts
-│   │   │   ├── migrations/                                  # Database migrations generated by TypeORM CLI
-│   │   │   └── database.module.ts                           # Module for TypeORM configuration
-│   │   ├── external-services/                               # Clients for external APIs
-│   │   │   ├── dailymed/
-│   │   │   │   └── dailymed.client.ts                       # Implements IDailyMedClient
-│   │   │   ├── spl-parser/
-│   │   │   │   └── spl-parser.service.ts                    # Implements ISplParserService
-│   │   │   └── ai-mapping/
-│   │   │       └── comprehend.client.ts                     # Implements IAiMapperClient (or LlmClient)
-│   │   ├── auth/                                            # Authentication specific infrastructure
-│   │   │   ├── strategies/
-│   │   │   │   └── jwt.strategy.ts
-│   │   │   ├── guards/
-│   │   │   │   ├── jwt-auth.guard.ts
-│   │   │   │   └── roles.guard.ts                           # RBAC
-│   │   │   ├── decorators/
-│   │   │   │   └── roles.decorator.ts                       # RBAC
-│   │   │   └── auth.module.ts
-│   │   ├── queues/                                          # Queue Producers and Consumers
-│   │   │   ├── producers/
-│   │   │   │   └── label-processing.producer.ts
-│   │   │   ├── consumers/
-│   │   │   │   ├── label-processing.consumer.ts
-│   │   │   │   └── indication-mapping.consumer.ts
-│   │   │   └── queue.module.ts
-│   │   └──...                                               # Other infra: Logging, Caching config
-│   ├── shared/                                              # Shared utilities, constants, config interfaces (optional)
-│   │   └── config/
-│   │       └── app-config.interface.ts
-│   ├── app.module.ts                                        # Root application module
-│   └── main.ts                                              # Main application entry point
-├── test/                                                    # Unit, Integration, E2E tests
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── Containerfile                                            # or Dockerfile
-├── compose.yml                                              # or docker-compose.yml
-├──.env.dev
-└── README.md
+src
+├── application                              # Application layer (business logic)
+│   ├── application.module.ts                # Module that brings together application services and interfaces
+│   ├── interfaces                           # Contains interface definitions for external services
+│   │   ├── iclaude.client.interface.ts      # Interface defining Claude AI client capabilities
+│   │   └── idailymed.client.interface.ts    # Interface defining DailyMed API client capabilities
+│   └── services                             # Application services implementing business logic
+│       ├── indication-extractor.service.ts  # Service for extracting indication information from drug labels
+│       └── indication-mapper.service.t      # Service for mapping indications to ICD-10 codes
+├── infrastructure                           # Infrastructure layer (adapters, controllers, external services)
+│   ├── controllers                          # API controllers handling HTTP requests
+│   │   ├── auth.controller.ts
+│   │   └── indication.controller.ts         # Controller for drug indication endpoints
+│   └── external-services                    # Implementations of external service clients
+│       ├── claude
+│       │   └── claude.client.ts             # Client implementation for Claude AI API
+│       └── dailymed
+│           ├── dailymed.client.spec.ts      # Unit tests for DailyMed client
+│           └── dailymed.client.ts           # Client implementation for DailyMed API
+├── app.module.ts                            # Main application module that imports all other modules
+├── main.ts                                  # Entry point for the NestJS application
+└── shared                                   # Shared utilities and configurations
+    └── config                               # Configuration interfaces and providers
+        └── app-config.interface.ts          # Interface defining application configuration options
 ```
+
+
