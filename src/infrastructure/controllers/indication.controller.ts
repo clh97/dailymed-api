@@ -1,5 +1,7 @@
-import { DailyMedAggregatedData } from '@application/interfaces/idailymed.client.interface';
+import { IndicationData } from '@application/interfaces/idailymed.client.interface';
 import { IndicationExtractorService } from '@application/services/indication-extractor.service';
+import { IndicationMapperService } from '@application/services/indication-mapper.service';
+import { ClaudeClient } from '@infrastructure/external-services/claude/claude.client';
 import { DailyMedClient } from '@infrastructure/external-services/dailymed/dailymed.client';
 import {
   Controller,
@@ -18,12 +20,12 @@ export class IndicationController {
   constructor(
     private readonly dailyMedClient: DailyMedClient,
     private readonly extractorService: IndicationExtractorService,
+    private readonly claudeClient: ClaudeClient,
+    private readonly indicationMapperService: IndicationMapperService,
   ) {}
 
   @Get('/drug/:setid')
-  async getSplBySetId(
-    @Param('setid') setid: string,
-  ): Promise<DailyMedAggregatedData> {
+  async getSplBySetId(@Param('setid') setid: string): Promise<IndicationData> {
     this.logger.log(`Received request to find SPL with setid: ${setid}`);
     try {
       const splEntry = await this.dailyMedClient.getSplBySetId(setid);
@@ -34,6 +36,13 @@ export class IndicationController {
       }
 
       this.logger.log(`Successfully found SPL with setid: ${setid}`);
+
+      const existing =
+        await this.indicationMapperService.getIndicationBySetId(setid);
+
+      if (existing) {
+        return { data: existing, metadata: splEntry };
+      }
 
       const xmlData = await this.dailyMedClient.fetchLabelXMLBySetId(
         splEntry.setid,
@@ -46,7 +55,27 @@ export class IndicationController {
         );
       }
 
-      return { data: '', metadata: splEntry };
+      const possibleIndication = this.extractorService.extractPatternContexts(
+        xmlData,
+        'indication',
+      );
+
+      const llmGenData = await this.claudeClient.generateResponse({
+        context: possibleIndication.contexts,
+        prompt: `
+        Given the extracted drug indications, map them to the appropriate ICD-10 codes using AI assistance.
+        You should return an abstracted, user-friendly version of all the indications ranked according to confidence level.`,
+        maxTokens: 1024,
+      });
+
+      await this.indicationMapperService.saveIndication(
+        splEntry.setid,
+        splEntry.title,
+        possibleIndication.contexts,
+        llmGenData.text,
+      );
+
+      return { data: llmGenData.text, metadata: splEntry };
     } catch (error) {
       this.logger.error(
         `Error fetching SPL with setid ${setid}:`,
@@ -61,9 +90,7 @@ export class IndicationController {
   }
 
   @Get('search')
-  async searchByTitle(
-    @Query('title') title: string,
-  ): Promise<DailyMedAggregatedData> {
+  async searchByTitle(@Query('title') title: string): Promise<IndicationData> {
     if (!title) {
       this.logger.warn('Search by title missing title parameter.');
       throw new NotFoundException(
@@ -83,6 +110,14 @@ export class IndicationController {
 
       this.logger.log(`Successfully found a SPL matching title: "${title}"`);
 
+      const existing = await this.indicationMapperService.getIndicationBySetId(
+        splEntry.setid,
+      );
+
+      if (existing) {
+        return { data: existing, metadata: splEntry };
+      }
+
       const xmlData = await this.dailyMedClient.fetchLabelXMLBySetId(
         splEntry.setid,
       );
@@ -96,10 +131,23 @@ export class IndicationController {
 
       const possibleIndication = this.extractorService.extractPatternContexts(
         xmlData,
-        'Indication',
+        'indication', // just a lookup for `intention` string and then it grabs the next 4 dom elements to use as context
       );
 
-      return { data: possibleIndication, metadata: splEntry };
+      const llmGenData = await this.claudeClient.generateResponse({
+        context: possibleIndication.contexts,
+        prompt: `Given the extracted drug indications, map them to the appropriate ICD-10 codes using AI assistance. The system should: return an abstracted, user-friendly definition of all the indications ranked according to confidence level.`,
+        maxTokens: 1024,
+      });
+
+      await this.indicationMapperService.saveIndication(
+        splEntry.setid,
+        title,
+        possibleIndication.contexts,
+        llmGenData.text,
+      );
+
+      return { data: llmGenData, metadata: splEntry };
     } catch (error) {
       this.logger.error(
         `Error searching SPL by title "${title}":`,

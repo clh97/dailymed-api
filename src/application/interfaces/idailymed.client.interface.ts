@@ -25,7 +25,7 @@ export interface DailyMedRoot {
   setid: string;
 }
 
-export interface DailyMedAggregatedData {
+export interface IndicationData {
   metadata: DailyMedRoot;
   data: any;
 }

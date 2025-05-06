@@ -9,6 +9,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       DAILYMED_API_BASE_URL: ${DAILYMED_API_BASE_URL}
+      LLM_API_URL: ${LLM_API_URL} 
+      LLM_API_KEY: ${LLM_API_KEY} 
     volumes:
       - .:/home/node/app
     depends_on:
