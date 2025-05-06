@@ -2,6 +2,8 @@
 
 Microservice-based application that generates drug indications by extracting data from DailyMed
 
+![](video.webm)
+
 ## My approach
 
 ### Understanding the data
