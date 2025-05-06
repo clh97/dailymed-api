@@ -1,5 +1,7 @@
+import { Observable } from "rxjs";
+
 export interface DailyMedData {
-  data: DailyMedDatum[];
+  data: DailyMedRoot[];
   metadata: DailyMedMetadata;
 }
 
@@ -16,14 +18,22 @@ export interface DailyMedMetadata {
   next_page: number | null;
 }
 
-export interface DailyMedDatum {
+export interface DailyMedRoot {
   spl_version: number;
   published_date: string;
   title: string;
   setid: string;
 }
 
+export interface DailyMedAggregatedData {
+  metadata: DailyMedRoot;
+  data: string;
+}
+
 export interface IDailyMedClient {
-  findBySetId(setId: string): Promise<DailyMedDatum | null>;
-  getAllPages(): Promise<DailyMedDatum[]>;
+  fetchDataPage(page: number, key: string): Observable<DailyMedData>;
+  fetchLabelXMLBySetId(setid: string): Promise<string | null>;
+
+  getSplBySetId(setId: string): Promise<DailyMedRoot | null>;
+  findSplByTitle(title: string): Promise<DailyMedRoot | null>;
 }

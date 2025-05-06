@@ -7,7 +7,7 @@ import { DailyMedClient } from "./dailymed.client";
 import { of, throwError } from "rxjs";
 import {
   DailyMedData,
-  DailyMedDatum,
+  DailyMedRoot,
 } from "@application/interfaces/idailymed.client.interface";
 
 const mockHttpService = {
@@ -111,7 +111,7 @@ describe("DailyMedClient", () => {
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).toHaveBeenCalledWith(
-        "http://test-api.com?page=1",
+        "http://test-api.com/services/v2/spls?page=1",
       );
       expect(redisClient.setex).toHaveBeenCalledWith(
         cacheKey,
@@ -135,7 +135,7 @@ describe("DailyMedClient", () => {
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).toHaveBeenCalledWith(
-        "http://test-api.com?page=1",
+        "http://test-api.com/services/v2/spls?page=1",
       );
       expect(redisClient.setex).not.toHaveBeenCalled();
     });
@@ -157,7 +157,7 @@ describe("DailyMedClient", () => {
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).toHaveBeenCalledWith(
-        "http://test-api.com?page=1",
+        "http://test-api.com/services/v2/spls?page=1",
       );
 
       expect(redisClient.setex).toHaveBeenCalledWith(
@@ -171,7 +171,7 @@ describe("DailyMedClient", () => {
 
   describe("findDataBySetId", () => {
     const setidToFind = "setid2";
-    const mockFoundDatum: DailyMedDatum = {
+    const mockFoundDatum: DailyMedRoot = {
       setid: setidToFind,
       title: "Drug 2",
       published_date: "2023-01-02",
@@ -210,7 +210,7 @@ describe("DailyMedClient", () => {
       };
       fetchDataPageSpy.mockReturnValue(of(mockPage1));
 
-      const result = await service.findDataBySetId(setidToFind);
+      const result = await service.getSplBySetId(setidToFind);
 
       expect(fetchDataPageSpy).toHaveBeenCalledTimes(1);
       expect(fetchDataPageSpy).toHaveBeenCalledWith(1);
@@ -259,7 +259,7 @@ describe("DailyMedClient", () => {
         .mockReturnValueOnce(of(mockPage1))
         .mockReturnValueOnce(of(mockPage2));
 
-      const result = await service.findDataBySetId(setidToFind);
+      const result = await service.getSplBySetId(setidToFind);
 
       expect(fetchDataPageSpy).toHaveBeenCalledTimes(2);
       expect(fetchDataPageSpy).toHaveBeenCalledWith(1);
@@ -316,7 +316,7 @@ describe("DailyMedClient", () => {
         .mockReturnValueOnce(of(mockPage1))
         .mockReturnValueOnce(of(mockPage2));
 
-      const result = await service.findDataBySetId("nonexistent_setid");
+      const result = await service.getSplBySetId("nonexistent_setid");
 
       expect(fetchDataPageSpy).toHaveBeenCalledTimes(2);
       expect(result).toBeNull();
@@ -351,7 +351,7 @@ describe("DailyMedClient", () => {
           throwError(() => new Error("Pagination API failed")),
         );
 
-      const result = await service.findDataBySetId(setidToFind);
+      const result = await service.getSplBySetId(setidToFind);
 
       expect(fetchDataPageSpy).toHaveBeenCalledTimes(2);
       expect(result).toBeNull();
@@ -362,7 +362,7 @@ describe("DailyMedClient", () => {
         throwError(() => new Error("Initial fetch failed")),
       );
 
-      const result = await service.findDataBySetId(setidToFind);
+      const result = await service.getSplBySetId(setidToFind);
 
       expect(fetchDataPageSpy).toHaveBeenCalledTimes(1);
       expect(result).toBeNull();

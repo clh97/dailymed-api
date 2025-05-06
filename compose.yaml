@@ -10,19 +10,19 @@ services:
       REDIS_PORT: ${REDIS_PORT}
       DAILYMED_API_BASE_URL: ${DAILYMED_API_BASE_URL}
     volumes:
-      - .:/app
+      - .:/home/node/app
     depends_on:
       - redis
-    restart: unless-stopped
+    security_opt:
+      - label:disable
 
   redis:
-    image: redis/redis-stack:latest
+    image: docker.io/redis/redis-stack:latest
     ports:
       - "6379:6379"
       - "8001:8001"
     volumes:
       - redis-data:/data
-    restart: unless-stopped
 
 volumes:
   redis-data:

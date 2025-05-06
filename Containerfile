@@ -1,27 +1,15 @@
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-# ----------------------------------------------
 FROM node:18-alpine
 
-WORKDIR /app
+RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+WORKDIR /home/node/app
 
-RUN addgroup -g 1001 -S nodejs && \
-  adduser -S nestjs -u 1001 && \
-  chown -R nestjs:nodejs /app
+COPY package*.json ./
 
-USER nestjs
+RUN npm install
 
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
+COPY --chown=1000:1000 . .
+
+EXPOSE 3000 
+
+CMD [ "npm", "run", "start:dev" ]

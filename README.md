@@ -1,6 +1,49 @@
 # dailymed-api
 
-Microservice-based application that extracts drug indications from DailyMed
+Microservice-based application that generates drug indications by extracting data from DailyMed
+
+## My approach
+
+### Understanding the data
+
+> **Download or scrape?**<br>
+> I wasn't really sure if downloading the datasets from DailyMed and populating a DB with them would be the ideal challenge so **I've decided to follow the scraping approach.**<br>
+> Real-world scenario I'd probably download the datasets and look for ways to update them.
+
+
+**Finding Dupixent**
+1. DailyMed's homepage search with the `DUPIXENT` term
+2. Figured they implement an exact name match search **<small>and decided not to use it because they provide an API to request data. Their search renders results statically, which is parseable but I've deccided do it myself because the API doesn't seem to provide search functionality</small>**
+3. Explored the DailyMed API [documentation](https://dailymed.nlm.nih.gov/dailymed/app-support-web-services.cfm) and found their [SPL paginated endpoint](https://dailymed.nlm.nih.gov/dailymed/services/v2/spls?page=1).
+4. Used it to create a simple crawler that progressively explores and matches a specific `setid`, looking for a specific drug name, caching entries to enhance future requests
+5. Added a functionality to crawl searching by drug name, returning the `setid` too
+6. With this data, was now able to retrieve the [entire label](https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=595f437d-2729-40bb-9c62-c8ece1f82780&type=xml)
+7. Searching for an OSS list of ICD10 codes, found this: [icd10cm_codes_2025.txt](https://raw.githubusercontent.com/Chetank190/icd_code_prediction/refs/heads/main/icd10cm_codes_2025.txt) and used vim to convert it to JSON
+
+## Writing the code
+
+1. `fetchDataPage` on `dailymed.client.ts` to retrieve and cache a entry
+2. `findDataBySetId` on `dailymed.client.ts` to crawl through the pages and find a specific `setid`
+3. `seatchDrugsByTitle` on `dailymed.client.ts` to crawl through the pages and find a specific string
+4. `fetchLabelXMLBySetId` on `dailymed.client.ts` to retrieve label "xml" data with the `setid` **but later changed it to `fetchLabelDOMBySetId`**, because the xml data wasn't properly serialized. The modified version uses the printer-friendly version of the label due to better formatting and easier parametrization.
+
+**With the necessary data, will start exploring ways to retrieve the close/next elements to INDICATION and COUNTERINDICATION terms**
+
+TODO
+
+## HTTP requests
+
+1. `GET /indication/drug/:setid` on `indication.controller.ts` to fetch drug data by url param `setid`
+2. `GET /indication/search?q=DUPIXENT` on `indication.controller.ts` to fetch drug data by query param `title`
+
+```sh
+# 1.
+curl 'localhost:3000/indication/drug/595f437d-2729-40bb-9c62-c8ece1f82780'
+
+# 2.
+curl 'localhost:3000/indication/search?title=IBUPROFEN'
+```
+
 
 ## Project structure
 

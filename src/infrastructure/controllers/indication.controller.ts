@@ -1,4 +1,4 @@
-import { DailyMedDatum } from "@application/interfaces/idailymed.client.interface";
+import { DailyMedAggregatedData } from "@application/interfaces/idailymed.client.interface";
 import { DailyMedClient } from "@infrastructure/external-services/dailymed/dailymed.client";
 import {
   Controller,
@@ -7,6 +7,7 @@ import {
   Logger,
   NotFoundException,
   Param,
+  Query,
 } from "@nestjs/common";
 
 @Controller("indication")
@@ -15,27 +16,89 @@ export class IndicationController {
 
   constructor(private readonly dailyMedClient: DailyMedClient) {}
 
-  @Get(":setid")
-  async getDrugBySetId(@Param("setid") setid: string): Promise<DailyMedDatum> {
-    this.logger.log(`Received request to find drug with setid: ${setid}`);
+  @Get("/drug/:setid")
+  async getSplBySetId(
+    @Param("setid") setid: string,
+  ): Promise<DailyMedAggregatedData> {
+    this.logger.log(`Received request to find SPL with setid: ${setid}`);
     try {
-      const drugData = await this.dailyMedClient.findDataBySetId(setid);
+      const splEntry = await this.dailyMedClient.getSplBySetId(setid);
 
-      if (!drugData) {
-        this.logger.warn(`Drug with setid ${setid} not found.`);
-        throw new NotFoundException(`Drug with setid "${setid}" not found.`);
+      if (!splEntry) {
+        this.logger.warn(`SPL with setid ${setid} not found.`);
+        throw new NotFoundException(`SPL with setid "${setid}" not found.`);
       }
 
-      this.logger.log(`Successfully found drug with setid: ${setid}`);
-      return drugData;
+      this.logger.log(`Successfully found SPL with setid: ${setid}`);
+
+      const xmlData = await this.dailyMedClient.fetchLabelXMLBySetId(
+        splEntry.setid,
+      );
+
+      if (!xmlData) {
+        this.logger.warn(`Label data for SPL "${splEntry.setid}" not found.`);
+        throw new NotFoundException(
+          `Label data for SPL "${splEntry.setid}" not found.`,
+        );
+      }
+
+      return { data: "", metadata: splEntry };
     } catch (error) {
       this.logger.error(
-        `Error fetching drug with setid ${setid}:`,
+        `Error fetching SPL with setid ${setid}:`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         error.message,
       );
 
       throw new InternalServerErrorException(
-        `Failed to retrieve drug data for setid "${setid}".`,
+        `Failed to retrieve SPL data for setid "${setid}".`,
+      );
+    }
+  }
+
+  @Get("search")
+  async searchByTitle(
+    @Query("title") title: string,
+  ): Promise<DailyMedAggregatedData> {
+    if (!title) {
+      this.logger.warn("Search by title missing title parameter.");
+      throw new NotFoundException(
+        "Title query parameter is required (e.g., /dailymed/search?title=DUPIXENT).",
+      );
+    }
+
+    this.logger.log(`Received request to search SPL by title: "${title}"`);
+
+    try {
+      const splEntry = await this.dailyMedClient.findSplByTitle(title);
+
+      if (!splEntry) {
+        this.logger.warn(`SPL with title "${title}" not found.`);
+        throw new NotFoundException(`SPL with title "${title}" not found.`);
+      }
+
+      this.logger.log(`Successfully found a SPL matching title: "${title}"`);
+
+      const xmlData = await this.dailyMedClient.fetchLabelXMLBySetId(
+        splEntry.setid,
+      );
+
+      if (!xmlData) {
+        this.logger.warn(`Label data for SPL "${splEntry.setid}" not found.`);
+        throw new NotFoundException(
+          `Label data for SPL "${splEntry.setid}" not found.`,
+        );
+      }
+
+      return { data: "", metadata: splEntry };
+    } catch (error) {
+      this.logger.error(
+        `Error searching SPL by title "${title}":`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        error.message,
+      );
+      throw new InternalServerErrorException(
+        `Failed to search SPL data for title "${title}".`,
       );
     }
   }
