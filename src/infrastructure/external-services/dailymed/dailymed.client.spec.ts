@@ -1,30 +1,30 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { Test, TestingModule } from "@nestjs/testing";
-import { HttpService } from "@nestjs/axios";
-import { ConfigService } from "@nestjs/config";
-import Redis from "ioredis";
-import { DailyMedClient } from "./dailymed.client";
-import { of, throwError } from "rxjs";
+import { Test, TestingModule } from '@nestjs/testing';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+import { DailyMedClient } from './dailymed.client';
+import { of, throwError } from 'rxjs';
 import {
   DailyMedData,
   DailyMedRoot,
-} from "@application/interfaces/idailymed.client.interface";
+} from '@application/interfaces/idailymed.client.interface';
 
 const mockHttpService = {
   get: jest.fn(),
 };
 
 const mockConfigService = {
-  get: jest.fn().mockReturnValue("http://test-api.com"),
+  get: jest.fn().mockReturnValue('http://test-api.com'),
 };
 
 const mockRedisClient = {
   get: jest.fn(),
-  setex: jest.fn().mockResolvedValue("OK"),
+  setex: jest.fn().mockResolvedValue('OK'),
   on: jest.fn(),
 };
 
-describe("DailyMedClient", () => {
+describe('DailyMedClient', () => {
   let service: DailyMedClient;
   let httpService: HttpService;
   let redisClient: Redis;
@@ -42,7 +42,7 @@ describe("DailyMedClient", () => {
           useValue: mockConfigService,
         },
         {
-          provide: "REDIS_CLIENT",
+          provide: 'REDIS_CLIENT',
           useValue: mockRedisClient,
         },
       ],
@@ -50,29 +50,29 @@ describe("DailyMedClient", () => {
 
     service = module.get<DailyMedClient>(DailyMedClient);
     httpService = module.get<HttpService>(HttpService);
-    redisClient = module.get<Redis>("REDIS_CLIENT");
+    redisClient = module.get<Redis>('REDIS_CLIENT');
 
     jest.clearAllMocks();
   });
 
-  it("should be defined", () => {
+  it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe("fetchDataPage", () => {
+  describe('fetchDataPage', () => {
     const mockPageData: DailyMedData = {
       data: [
         {
-          setid: "setid1",
-          title: "Drug 1",
-          published_date: "2023-01-01",
+          setid: 'setid1',
+          title: 'Drug 1',
+          published_date: '2023-01-01',
           spl_version: 1,
         },
       ],
       metadata: {
-        db_published_date: "2023-01-01",
+        db_published_date: '2023-01-01',
         elements_per_page: 1,
-        current_url: "http://test-api.com?page=1",
+        current_url: 'http://test-api.com?page=1',
         next_page_url: null,
         total_elements: 1,
         total_pages: 1,
@@ -83,35 +83,35 @@ describe("DailyMedClient", () => {
       },
     };
 
-    it("should return cached data if available", async () => {
+    it('should return cached data if available', async () => {
       const page = 1;
       const cacheKey = `dailymed_page_${page}`;
       mockRedisClient.get.mockResolvedValue(JSON.stringify(mockPageData));
 
-      const result = await service["fetchDataPage"](page).toPromise();
+      const result = await service['fetchDataPage'](page).toPromise();
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).not.toHaveBeenCalled();
       expect(result).toEqual(mockPageData);
     });
 
-    it("should fetch data from API if cache is empty and cache the result", async () => {
+    it('should fetch data from API if cache is empty and cache the result', async () => {
       const page = 1;
       const cacheKey = `dailymed_page_${page}`;
       mockRedisClient.get.mockResolvedValue(null);
       const mockAxiosResponse = {
         data: mockPageData,
         status: 200,
-        statusText: "OK",
+        statusText: 'OK',
         headers: {},
       };
       mockHttpService.get.mockReturnValue(of(mockAxiosResponse));
 
-      const result = await service["fetchDataPage"](page).toPromise();
+      const result = await service['fetchDataPage'](page).toPromise();
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).toHaveBeenCalledWith(
-        "http://test-api.com/services/v2/spls?page=1",
+        'http://test-api.com/services/v2/spls?page=1',
       );
       expect(redisClient.setex).toHaveBeenCalledWith(
         cacheKey,
@@ -121,43 +121,43 @@ describe("DailyMedClient", () => {
       expect(result).toEqual(mockPageData);
     });
 
-    it("should handle API errors", async () => {
+    it('should handle API errors', async () => {
       const page = 1;
       const cacheKey = `dailymed_page_${page}`;
       mockRedisClient.get.mockResolvedValue(null);
       mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("API failed")),
+        throwError(() => new Error('API failed')),
       );
 
-      await expect(service["fetchDataPage"](page).toPromise()).rejects.toThrow(
-        "API failed",
+      await expect(service['fetchDataPage'](page).toPromise()).rejects.toThrow(
+        'API failed',
       );
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).toHaveBeenCalledWith(
-        "http://test-api.com/services/v2/spls?page=1",
+        'http://test-api.com/services/v2/spls?page=1',
       );
       expect(redisClient.setex).not.toHaveBeenCalled();
     });
 
-    it("should fetch data from API if Redis get fails and cache the result", async () => {
+    it('should fetch data from API if Redis get fails and cache the result', async () => {
       const page = 1;
       const cacheKey = `dailymed_page_${page}`;
-      mockRedisClient.get.mockRejectedValue(new Error("Redis get error"));
+      mockRedisClient.get.mockRejectedValue(new Error('Redis get error'));
       const mockAxiosResponse = {
         data: mockPageData,
         status: 200,
-        statusText: "OK",
+        statusText: 'OK',
         headers: {},
         config: {},
       };
       mockHttpService.get.mockReturnValue(of(mockAxiosResponse));
 
-      const result = await service["fetchDataPage"](page).toPromise();
+      const result = await service['fetchDataPage'](page).toPromise();
 
       expect(redisClient.get).toHaveBeenCalledWith(cacheKey);
       expect(httpService.get).toHaveBeenCalledWith(
-        "http://test-api.com/services/v2/spls?page=1",
+        'http://test-api.com/services/v2/spls?page=1',
       );
 
       expect(redisClient.setex).toHaveBeenCalledWith(
@@ -169,28 +169,28 @@ describe("DailyMedClient", () => {
     });
   });
 
-  describe("findDataBySetId", () => {
-    const setidToFind = "setid2";
+  describe('findDataBySetId', () => {
+    const setidToFind = 'setid2';
     const mockFoundDatum: DailyMedRoot = {
       setid: setidToFind,
-      title: "Drug 2",
-      published_date: "2023-01-02",
+      title: 'Drug 2',
+      published_date: '2023-01-02',
       spl_version: 1,
     };
 
     let fetchDataPageSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      fetchDataPageSpy = jest.spyOn(service as any, "fetchDataPage");
+      fetchDataPageSpy = jest.spyOn(service as any, 'fetchDataPage');
     });
 
-    it("should find the setid on the first page", async () => {
+    it('should find the setid on the first page', async () => {
       const mockPage1: DailyMedData = {
         data: [
           {
-            setid: "setid1",
-            title: "Drug 1",
-            published_date: "2023-01-01",
+            setid: 'setid1',
+            title: 'Drug 1',
+            published_date: '2023-01-01',
             spl_version: 1,
           },
           mockFoundDatum,
@@ -199,9 +199,9 @@ describe("DailyMedClient", () => {
           total_pages: 2,
           current_page: 1,
           elements_per_page: 2,
-          db_published_date: "",
-          current_url: "",
-          next_page_url: "",
+          db_published_date: '',
+          current_url: '',
+          next_page_url: '',
           total_elements: 4,
           previous_page: null,
           previous_page_url: null,
@@ -217,13 +217,13 @@ describe("DailyMedClient", () => {
       expect(result).toEqual(mockFoundDatum);
     });
 
-    it("should find the setid on a subsequent page", async () => {
+    it('should find the setid on a subsequent page', async () => {
       const mockPage1: DailyMedData = {
         data: [
           {
-            setid: "setid1",
-            title: "Drug 1",
-            published_date: "2023-01-01",
+            setid: 'setid1',
+            title: 'Drug 1',
+            published_date: '2023-01-01',
             spl_version: 1,
           },
         ],
@@ -231,9 +231,9 @@ describe("DailyMedClient", () => {
           total_pages: 2,
           current_page: 1,
           elements_per_page: 1,
-          db_published_date: "",
-          current_url: "",
-          next_page_url: "",
+          db_published_date: '',
+          current_url: '',
+          next_page_url: '',
           total_elements: 2,
           previous_page: null,
           previous_page_url: null,
@@ -246,12 +246,12 @@ describe("DailyMedClient", () => {
           total_pages: 2,
           current_page: 2,
           elements_per_page: 1,
-          db_published_date: "",
-          current_url: "",
+          db_published_date: '',
+          current_url: '',
           next_page_url: null,
           total_elements: 2,
           previous_page: 1,
-          previous_page_url: "",
+          previous_page_url: '',
           next_page: null,
         },
       };
@@ -267,13 +267,13 @@ describe("DailyMedClient", () => {
       expect(result).toEqual(mockFoundDatum);
     });
 
-    it("should return null if setid is not found on any page", async () => {
+    it('should return null if setid is not found on any page', async () => {
       const mockPage1: DailyMedData = {
         data: [
           {
-            setid: "setid1",
-            title: "Drug 1",
-            published_date: "2023-01-01",
+            setid: 'setid1',
+            title: 'Drug 1',
+            published_date: '2023-01-01',
             spl_version: 1,
           },
         ],
@@ -281,9 +281,9 @@ describe("DailyMedClient", () => {
           total_pages: 2,
           current_page: 1,
           elements_per_page: 1,
-          db_published_date: "",
-          current_url: "",
-          next_page_url: "",
+          db_published_date: '',
+          current_url: '',
+          next_page_url: '',
           total_elements: 2,
           previous_page: null,
           previous_page_url: null,
@@ -293,9 +293,9 @@ describe("DailyMedClient", () => {
       const mockPage2: DailyMedData = {
         data: [
           {
-            setid: "setid3",
-            title: "Drug 3",
-            published_date: "2023-01-03",
+            setid: 'setid3',
+            title: 'Drug 3',
+            published_date: '2023-01-03',
             spl_version: 1,
           },
         ],
@@ -303,12 +303,12 @@ describe("DailyMedClient", () => {
           total_pages: 2,
           current_page: 2,
           elements_per_page: 1,
-          db_published_date: "",
-          current_url: "",
+          db_published_date: '',
+          current_url: '',
           next_page_url: null,
           total_elements: 2,
           previous_page: 1,
-          previous_page_url: "",
+          previous_page_url: '',
           next_page: null,
         },
       };
@@ -316,19 +316,19 @@ describe("DailyMedClient", () => {
         .mockReturnValueOnce(of(mockPage1))
         .mockReturnValueOnce(of(mockPage2));
 
-      const result = await service.getSplBySetId("nonexistent_setid");
+      const result = await service.getSplBySetId('nonexistent_setid');
 
       expect(fetchDataPageSpy).toHaveBeenCalledTimes(2);
       expect(result).toBeNull();
     });
 
-    it("should return null if an API error occurs during pagination", async () => {
+    it('should return null if an API error occurs during pagination', async () => {
       const mockPage1: DailyMedData = {
         data: [
           {
-            setid: "setid1",
-            title: "Drug 1",
-            published_date: "2023-01-01",
+            setid: 'setid1',
+            title: 'Drug 1',
+            published_date: '2023-01-01',
             spl_version: 1,
           },
         ],
@@ -336,9 +336,9 @@ describe("DailyMedClient", () => {
           total_pages: 2,
           current_page: 1,
           elements_per_page: 1,
-          db_published_date: "",
-          current_url: "",
-          next_page_url: "",
+          db_published_date: '',
+          current_url: '',
+          next_page_url: '',
           total_elements: 2,
           previous_page: null,
           previous_page_url: null,
@@ -348,7 +348,7 @@ describe("DailyMedClient", () => {
       fetchDataPageSpy
         .mockReturnValueOnce(of(mockPage1))
         .mockReturnValueOnce(
-          throwError(() => new Error("Pagination API failed")),
+          throwError(() => new Error('Pagination API failed')),
         );
 
       const result = await service.getSplBySetId(setidToFind);
@@ -357,9 +357,9 @@ describe("DailyMedClient", () => {
       expect(result).toBeNull();
     });
 
-    it("should handle initial page fetch error", async () => {
+    it('should handle initial page fetch error', async () => {
       fetchDataPageSpy.mockReturnValue(
-        throwError(() => new Error("Initial fetch failed")),
+        throwError(() => new Error('Initial fetch failed')),
       );
 
       const result = await service.getSplBySetId(setidToFind);

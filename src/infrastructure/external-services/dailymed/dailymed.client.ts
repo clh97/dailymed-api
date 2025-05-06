@@ -1,15 +1,15 @@
-import { Injectable, Logger, Inject } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { ConfigService } from "@nestjs/config";
-import { AxiosResponse } from "axios";
-import { Observable, firstValueFrom } from "rxjs";
-import { map, catchError } from "rxjs/operators";
-import Redis from "ioredis";
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { AxiosResponse } from 'axios';
+import { Observable, firstValueFrom } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import Redis from 'ioredis';
 import {
   DailyMedData,
   DailyMedRoot,
   IDailyMedClient,
-} from "@application/interfaces/idailymed.client.interface";
+} from '@application/interfaces/idailymed.client.interface';
 
 @Injectable()
 export class DailyMedClient implements IDailyMedClient {
@@ -20,17 +20,17 @@ export class DailyMedClient implements IDailyMedClient {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-    @Inject("REDIS_CLIENT")
+    @Inject('REDIS_CLIENT')
     redisClient: Redis,
   ) {
     this.baseUrl = this.configService.get(
-      "DAILYMED_API_BASE_URL",
-      "http://localhost:3001/api",
+      'DAILYMED_API_BASE_URL',
+      'http://localhost:3001/api',
     );
     this.redisClient = redisClient;
 
-    this.redisClient.on("error", (err) => {
-      this.logger.error("Redis Client Error", err);
+    this.redisClient.on('error', (err) => {
+      this.logger.error('Redis Client Error', err);
     });
   }
 
@@ -42,7 +42,7 @@ export class DailyMedClient implements IDailyMedClient {
    */
   fetchDataPage(
     page: number,
-    key: string = "dailymed_page",
+    key: string = 'dailymed_page',
   ): Observable<DailyMedData> {
     const url = `${this.baseUrl}/services/v2/spls?page=${page}`;
     const cacheKey = `${key}_${page}`;
@@ -153,7 +153,7 @@ export class DailyMedClient implements IDailyMedClient {
       );
 
       const response = await firstValueFrom(
-        this.httpService.get(url, { responseType: "text" }).pipe(
+        this.httpService.get(url, { responseType: 'text' }).pipe(
           catchError((error) => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             this.logger.error(`Error fetching XML from ${url}`, error.message);
