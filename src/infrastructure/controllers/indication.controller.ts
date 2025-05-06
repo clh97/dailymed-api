@@ -1,4 +1,5 @@
 import { DailyMedAggregatedData } from '@application/interfaces/idailymed.client.interface';
+import { IndicationExtractorService } from '@application/services/indication-extractor.service';
 import { DailyMedClient } from '@infrastructure/external-services/dailymed/dailymed.client';
 import {
   Controller,
@@ -14,7 +15,10 @@ import {
 export class IndicationController {
   private readonly logger = new Logger(IndicationController.name);
 
-  constructor(private readonly dailyMedClient: DailyMedClient) {}
+  constructor(
+    private readonly dailyMedClient: DailyMedClient,
+    private readonly extractorService: IndicationExtractorService,
+  ) {}
 
   @Get('/drug/:setid')
   async getSplBySetId(
@@ -90,7 +94,12 @@ export class IndicationController {
         );
       }
 
-      return { data: '', metadata: splEntry };
+      const possibleIndication = this.extractorService.extractPatternContexts(
+        xmlData,
+        'Indication',
+      );
+
+      return { data: possibleIndication, metadata: splEntry };
     } catch (error) {
       this.logger.error(
         `Error searching SPL by title "${title}":`,

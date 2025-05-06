@@ -27,7 +27,7 @@ export interface DailyMedRoot {
 
 export interface DailyMedAggregatedData {
   metadata: DailyMedRoot;
-  data: string;
+  data: any;
 }
 
 export interface IDailyMedClient {
