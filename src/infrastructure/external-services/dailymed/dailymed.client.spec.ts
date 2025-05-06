@@ -85,7 +85,7 @@ describe('DailyMedClient', () => {
 
     it('should return cached data if available', async () => {
       const page = 1;
-      const cacheKey = `dailymed_page_${page}`;
+      const cacheKey = `dailymed_spl_page_${page}`;
       mockRedisClient.get.mockResolvedValue(JSON.stringify(mockPageData));
 
       const result = await service['fetchDataPage'](page).toPromise();
@@ -97,7 +97,7 @@ describe('DailyMedClient', () => {
 
     it('should fetch data from API if cache is empty and cache the result', async () => {
       const page = 1;
-      const cacheKey = `dailymed_page_${page}`;
+      const cacheKey = `dailymed_spl_page_${page}`;
       mockRedisClient.get.mockResolvedValue(null);
       const mockAxiosResponse = {
         data: mockPageData,
@@ -123,7 +123,7 @@ describe('DailyMedClient', () => {
 
     it('should handle API errors', async () => {
       const page = 1;
-      const cacheKey = `dailymed_page_${page}`;
+      const cacheKey = `dailymed_spl_page_${page}`;
       mockRedisClient.get.mockResolvedValue(null);
       mockHttpService.get.mockReturnValue(
         throwError(() => new Error('API failed')),
@@ -142,7 +142,7 @@ describe('DailyMedClient', () => {
 
     it('should fetch data from API if Redis get fails and cache the result', async () => {
       const page = 1;
-      const cacheKey = `dailymed_page_${page}`;
+      const cacheKey = `dailymed_spl_page_${page}`;
       mockRedisClient.get.mockRejectedValue(new Error('Redis get error'));
       const mockAxiosResponse = {
         data: mockPageData,
