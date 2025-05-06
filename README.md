@@ -1,6 +1,6 @@
 # DailyMed API
 
-Node.js application that uses an LLM to generate a medication indication list with its respective ICD-10 codes, using DailyMed data.
+Nest.js application that uses an LLM to generate a medication indication list with its respective ICD-10 codes, using DailyMed data.
 
 ![](video.gif)
 
