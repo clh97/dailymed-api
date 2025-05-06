@@ -9,7 +9,7 @@ Microservice-based application that generates drug indications by extracting dat
 ### Understanding the data
 
 > **Download or scrape?**<br>
-> I wasn't really sure if downloading the datasets from DailyMed and populating a DB with them would be the ideal challenge so **I've decided to follow the scraping approach.**<br>
+> I wasn't really sure if downloading the datasets from DailyMed and populating a DB with them would be the ideal challenge so **I've decided to follow the scraping approach.**<br><br>
 > Real-world scenario I'd probably download the datasets and look for ways to update them.
 
 
