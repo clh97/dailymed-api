@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      DAILYMED_API_BASE_URL: ${DAILYMED_API_BASE_URL}
+    volumes:
+      - .:/home/node/app
+    depends_on:
+      - redis
+    security_opt:
+      - label:disable
+
+  redis:
+    image: docker.io/redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
