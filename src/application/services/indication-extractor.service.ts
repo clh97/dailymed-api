@@ -47,7 +47,7 @@ export class IndicationExtractorService {
 
       return {
         pattern,
-        contexts: contexts.slice(0, 4), //max 4 contexts
+        contexts: contexts.slice(0, 1), //max 1 context
       };
     } catch (error) {
       this.logger.error(
